@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>初始化 · Emby 弹幕缓存</title>
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}" />
+</head>
+<body class="setup-body">
+  <div class="setup-wrap">
+    <div class="setup-card">
+      <div class="ob-head">
+        <div class="ob-brand">Emby 弹幕缓存 · 初始化</div>
+        <div class="ob-steps">
+          <span class="ob-step" data-step="1"><i>1</i>连接 Emby</span>
+          <span class="ob-step" data-step="2"><i>2</i>选择媒体库</span>
+          <span class="ob-step" data-step="3"><i>3</i>完成</span>
+        </div>
+      </div>
+
+      <!-- 第一步：连接 -->
+      <div class="ob-body" data-panel="1" hidden>
+        <p class="ob-title">先连上你的 Emby</p>
+        <p class="ob-desc">
+          地址和密钥只保存在本机的数据库里，不会上传到任何地方。
+        </p>
+        <label class="field">
+          <span>服务器地址</span>
+          <input type="text" id="setup-url" placeholder="192.168.0.112:8096 或 https://emby.example.com" spellcheck="false" />
+          <small>支持 IP、主机名（如 nas.local）和域名，可带端口与 https；只写地址会自动补 http://</small>
+        </label>
+        <label class="field">
+          <span>API Key</span>
+          <input type="password" id="setup-key" placeholder="Emby 后台 → 设置 → 高级 → API 密钥" spellcheck="false" />
+        </label>
+        <div class="err-text" id="setup-err-1"></div>
+        <div class="ob-actions">
+          <span class="sub" id="setup-test-result"></span>
+          <span class="spacer"></span>
+          <button id="setup-test">测试连接</button>
+          <button class="primary" id="setup-next-1">下一步</button>
+        </div>
+      </div>
+
+      <!-- 第二步：选库 -->
+      <div class="ob-body" data-panel="2" hidden>
+        <p class="ob-title">选择要监控的媒体库</p>
+        <p class="ob-desc">
+          只扫描勾选的库，默认全部未选，请至少选择一个。之后随时可以在设置里调整。
+        </p>
+        <div class="lib-list" id="setup-lib-list"></div>
+        <div class="err-text" id="setup-err-2"></div>
+        <div class="ob-actions">
+          <button class="small" id="setup-sync">同步媒体库</button>
+          <span class="sub" id="setup-sync-result"></span>
+          <span class="spacer"></span>
+          <button id="setup-back-2">上一步</button>
+          <button class="primary" id="setup-next-2">下一步</button>
+        </div>
+      </div>
+
+      <!-- 第三步：完成 -->
+      <div class="ob-body" data-panel="3" hidden>
+        <p class="ob-title">准备就绪</p>
+        <p class="ob-desc" id="setup-summary"></p>
+        <div class="err-text" id="setup-err-3"></div>
+        <div class="ob-actions">
+          <span class="sub" id="setup-scan-result"></span>
+          <span class="spacer"></span>
+          <button id="setup-skip">先不扫描，进入控制台</button>
+          <button class="primary" id="setup-scan">立即扫描所选库</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/setup.js?v={{ version }}"></script>
+</body>
+</html>

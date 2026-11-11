@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Emby 弹幕缓存</title>
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}" />
+</head>
+<body>
+  <header>
+    <h1>Emby 弹幕缓存</h1>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="main">控制台</button>
+      <button class="nav-btn" data-view="settings">设置</button>
+    </nav>
+    <span class="badge" id="health">检查中…</span>
+    <span class="spacer"></span>
+    <span class="sub" id="server-label"></span>
+  </header>
+
+  <!-- ============================ 控制台 ============================ -->
+  <div class="workspace" id="workspace">
+    <main id="view-main">
+      <section class="panel">
+        <h2>
+          扫描
+          <span class="hint" id="scan-scope">尚未选择媒体库</span>
+          <span class="spacer"></span>
+          <button class="small" id="btn-goto-libs">选择媒体库</button>
+        </h2>
+        <div class="toolbar">
+          <label><input type="radio" name="mode" value="full" checked /> 全量（发现删除）</label>
+          <label><input type="radio" name="mode" value="incremental" /> 增量（仅近期变更）</label>
+          <span class="spacer"></span>
+          <button class="primary" id="btn-scan">开始扫描</button>
+          <button class="danger" id="btn-cancel" disabled>取消</button>
+        </div>
+        <div class="err-text" id="scan-error"></div>
+
+        <div class="progress-wrap">
+          <div class="progress-head">
+            <span id="progress-head-left">尚未开始</span>
+            <span>
+              <span id="progress-head-right"></span>
+              <strong id="progress-percent" style="margin-left:10px">0%</strong>
+            </span>
+          </div>
+          <div class="track"><span id="progress-fill"></span></div>
+          <div class="lib-progress" id="lib-progress"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>
+          媒体库内容
+          <span class="hint" id="media-summary"></span>
+          <span class="legend">
+            <span><i class="dot pending"></i>待匹配</span>
+            <span><i class="dot matched"></i>已匹配</span>
+            <span><i class="dot cached"></i>已缓存</span>
+            <span><i class="dot failed"></i>失败</span>
+          </span>
+          <span class="spacer"></span>
+          <select id="f-library"><option value="">全部库</option></select>
+          <input type="text" id="f-q" placeholder="搜索剧名 / 片名" />
+          <label class="sub"><input type="checkbox" id="f-removed" /> 显示已移除</label>
+        </h2>
+        <div class="card-grid" id="media-groups"></div>
+        <div class="pager">
+          <span id="pager-info"></span>
+          <button class="small" id="btn-prev">上一页</button>
+          <button class="small" id="btn-next">下一页</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="rail">
+      <section class="panel">
+        <h2>入库统计</h2>
+        <div class="stats rail-stats" id="stats"></div>
+      </section>
+
+      <section class="panel log-panel">
+        <h2>
+          运行日志
+          <span class="log-count" id="log-count">0 条</span>
+          <span class="spacer"></span>
+          <select id="log-filter" class="mini">
+            <option value="all">全部</option>
+            <option value="warn">警告及以上</option>
+            <option value="error">仅错误</option>
+          </select>
+          <button class="small" id="btn-log-copy" title="复制当前筛选后的日志">复制</button>
+          <button class="small" id="btn-log-download" title="下载当前筛选后的日志">下载</button>
+          <button class="small" id="btn-log-clear" title="只清空显示，不影响运行">清空</button>
+        </h2>
+        <div class="log-list" id="log-list"></div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- ============================ 设置 ============================ -->
+  <main id="view-settings" hidden>
+    <section class="panel">
+      <h2>Emby 连接</h2>
+      <div class="form">
+        <label class="field">
+          <span>服务器地址</span>
+          <input type="text" id="s-url" placeholder="192.168.0.112:8096 或 https://emby.example.com" spellcheck="false" />
+          <small>支持 IP、主机名（如 nas.local）和域名，可带端口与 https；只写地址会自动补 http://</small>
+        </label>
+        <label class="field">
+          <span>API Key</span>
+          <input type="password" id="s-key" placeholder="留空表示不修改" spellcheck="false" />
+          <small>Emby 后台 → 设置 → 高级 → API 密钥。当前：<code id="s-key-state">未设置</code></small>
+        </label>
+        <div class="form-actions">
+          <button id="btn-test">测试连接</button>
+          <button class="primary" id="btn-save">保存</button>
+          <span class="sub" id="s-msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>
+        监控的媒体库
+        <span class="hint">勾选即保存，扫描与定时任务都按这里执行</span>
+        <span class="spacer"></span>
+        <span class="sub" id="refresh-result"></span>
+        <button class="small" id="btn-refresh">同步库列表</button>
+      </h2>
+      <div class="toolbar" style="margin-bottom:10px">
+        <button class="small" id="btn-all">全选</button>
+        <button class="small" id="btn-video">仅番剧库</button>
+        <button class="small" id="btn-none">全不选</button>
+      </div>
+      <div class="lib-list" id="lib-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>扫描设置</h2>
+      <div class="form">
+        <div class="row2">
+          <label class="field">
+            <span>每页条数</span>
+            <input type="number" id="s-page-size" min="20" max="1000" step="10" />
+            <small>20–1000，默认 500</small>
+          </label>
+          <label class="field">
+            <span>定时扫描</span>
+            <label class="switch"><input type="checkbox" id="s-scheduler" /> 启用</label>
+            <small>关闭后只能手动扫描</small>
+          </label>
+        </div>
+        <div class="row2">
+          <label class="field">
+            <span>增量扫描（cron）</span>
+            <input type="text" id="s-cron-inc" placeholder="0 3 * * *" spellcheck="false" />
+            <small>默认每天 03:00</small>
+          </label>
+          <label class="field">
+            <span>全量扫描（cron）</span>
+            <input type="text" id="s-cron-full" placeholder="0 3 * * 0" spellcheck="false" />
+            <small>默认每周日 03:00</small>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="primary" id="btn-save-scan">保存扫描设置</button>
+          <span class="sub" id="s-scan-msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>危险操作</h2>
+      <div class="form">
+        <div class="danger-row">
+          <div>
+            <strong>完全重置</strong>
+            <div class="sub">删除 Emby 配置与全部扫描数据，回到初始化页面。此操作不可撤销。</div>
+          </div>
+          <button class="danger" id="btn-reset">完全重置</button>
+        </div>
+        <div class="danger-row">
+          <div>
+            <strong>清空扫描数据</strong>
+            <div class="sub" id="purge-hint">删除全部库记录与条目索引，配置保留。下次需要重新同步库并扫描。</div>
+          </div>
+          <button class="danger" id="btn-purge">清空数据</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================ 全部集数抽屉 ============================ -->
+  <div class="drawer-overlay" id="episode-drawer" hidden>
+    <aside class="episode-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header class="drawer-head">
+        <div class="drawer-heading">
+          <h2 id="drawer-title"></h2>
+          <div class="drawer-sub" id="drawer-sub"></div>
+        </div>
+        <button class="small" id="drawer-close" type="button">关闭</button>
+      </header>
+      <div class="drawer-body" id="drawer-body"></div>
+    </aside>
+  </div>
+
+  <!-- ============================ 危险操作确认 ============================ -->
+  <div class="overlay" id="danger" hidden>
+    <div class="ob-card danger-card">
+      <div class="ob-body">
+        <p class="ob-title" id="danger-title">危险操作</p>
+        <p class="ob-desc" id="danger-desc"></p>
+        <ul class="danger-list" id="danger-list"></ul>
+        <div class="err-text" id="danger-err"></div>
+        <div class="ob-actions">
+          <span class="spacer"></span>
+          <button id="danger-cancel">取消</button>
+          <button class="danger" id="danger-confirm">确认执行</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v={{ version }}"></script>
+</body>
+</html>
