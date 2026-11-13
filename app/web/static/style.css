@@ -310,6 +310,9 @@ button.small { padding: 3px 10px; font-size: 12px; }
   padding-top: 1px;
   display: flex;
   flex-direction: column;
+  /* 父级是 align-items:start（防海报拉伸），这里要反过来撑满，
+     否则「查看全部」按钮的 margin-top:auto 没有多余空间可推 */
+  align-self: stretch;
   min-width: 0;
 }
 .m-title {
@@ -334,6 +337,7 @@ button.small { padding: 3px 10px; font-size: 12px; }
 /* 分季：每季一行，左侧只用纯文字季标识，避免和单集方块混淆 */
 .m-seasons {
   margin-top: 8px;
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -388,8 +392,9 @@ button.small { padding: 3px 10px; font-size: 12px; }
 }
 
 .m-episode-drawer-btn {
-  align-self: flex-start;
-  margin-top: 8px;
+  /* 统一贴在卡片右下角，作为操作区的锚点 */
+  align-self: flex-end;
+  margin-top: auto;
   height: 28px;
   padding: 0 10px;
   border: 1px solid #dbe3ef;
