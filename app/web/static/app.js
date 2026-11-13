@@ -80,17 +80,20 @@ async function loadHealth() {
   const badge = $("#health");
   try {
     const h = await api("/api/health");
-    $("#server-label").textContent = h.base_url || "";
+    // 地址不单独占位，收进 title 悬停可见
+    const addr = h.base_url || "";
     if (!h.configured) {
       badge.className = "badge";
       badge.textContent = "未配置 Emby";
+      badge.title = addr;
     } else if (h.emby_ok) {
       badge.className = "badge ok";
       badge.textContent = `已连接 · ${h.emby}`;
+      badge.title = addr ? `${addr}\nEmby ${h.emby}` : `Emby ${h.emby}`;
     } else {
       badge.className = "badge err";
       badge.textContent = "连接失败";
-      badge.title = h.emby || "";
+      badge.title = [addr, h.emby].filter(Boolean).join("\n");
     }
   } catch (e) {
     badge.className = "badge err";
