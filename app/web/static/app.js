@@ -780,6 +780,28 @@ function openEpisodeDrawer(g) {
   if (g.library_name) bits.push(g.library_name);
   if (g.updated_at) bits.push(`最近更新 ${fmtTime(g.updated_at)}`);
   $("#drawer-sub").textContent = bits.join(" · ");
+
+  // 封面：和卡片用同一个代理接口，取不到时退回首字占位
+  const cover = $("#drawer-cover");
+  const initial = (g.title || "?").trim().charAt(0);
+  cover.textContent = "";
+  if (g.cover_id) {
+    const img = document.createElement("img");
+    img.alt = g.title || "";
+    const first = (g.items || []).find((it) => it.emby_id !== g.cover_id);
+    const fallback = first ? `&fallback=${encodeURIComponent(first.emby_id)}` : "";
+    img.src = `/api/media/cover/${encodeURIComponent(g.cover_id)}?w=360${fallback}`;
+    img.addEventListener(
+      "error",
+      () => {
+        cover.textContent = initial;
+      },
+      { once: true }
+    );
+    cover.appendChild(img);
+  } else {
+    cover.textContent = initial;
+  }
   const body = $("#drawer-body");
   body.innerHTML = "";
   body.appendChild(buildDrawerContent(g.items || []));

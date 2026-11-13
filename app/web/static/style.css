@@ -486,12 +486,32 @@ body.drawer-open { overflow: hidden; }
 .modal-head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 16px;
-  padding: 20px 24px 16px;
+  padding: 18px 22px 16px;
   border-bottom: 1px solid var(--border);
 }
-.modal-heading { min-width: 0; }
+/* 弹窗里的封面：2:3，和卡片同源，取不到时显示首字 */
+.modal-cover {
+  flex: 0 0 auto;
+  width: 92px;
+  height: 138px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, #eef1f6, #e2e7f0);
+  color: #a8b1bf;
+  font-size: 26px;
+  font-weight: 600;
+  user-select: none;
+}
+.modal-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.modal-heading { flex: 1 1 auto; min-width: 0; padding-top: 2px; }
 .modal-head h2 {
   margin: 0;
   font-size: 19px;
