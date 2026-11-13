@@ -519,13 +519,26 @@ function buildGroupCard(g) {
     body.appendChild(row);
   } else {
     const needsDrawer = list.length > EPISODE_DRAWER_THRESHOLD;
-    body.appendChild(buildSeasonBlock(list, { preview: needsDrawer }));
+    const block = buildSeasonBlock(list, { preview: needsDrawer });
+    body.appendChild(block.node);
+
+    // 底部操作栏：左侧折叠摘要 + 弹幕获取率，右侧展开入口
+    const footer = el("div", "m-footer");
+    const info = el("div", "m-footer-info");
+    if (block.more) info.appendChild(el("span", "m-more", block.more));
+    const have = list.filter((it) => (it.danmaku_status || "none") !== "none").length;
+    const rate = el("span", "m-rate", `弹幕 ${have}/${g.total}`);
+    rate.title = `已获取 ${have} 集，共 ${g.total} 集`;
+    info.appendChild(rate);
+    footer.appendChild(info);
+
     if (needsDrawer) {
       const btn = el("button", "m-episode-drawer-btn", `查看全部 ${g.total} 集`);
       btn.type = "button";
       btn.addEventListener("click", () => openEpisodeDrawer(g));
-      body.appendChild(btn);
+      footer.appendChild(btn);
     }
+    body.appendChild(footer);
   }
   card.appendChild(body);
   return card;
@@ -593,20 +606,23 @@ function buildSeasonBlock(list, { preview = false } = {}) {
     wrap.appendChild(row);
   }
 
-  // 季太多时不再往下堆，折成一行摘要
+  // 季太多时不再往下堆，摘要文字交给卡片底部操作栏
+  let more = null;
   if (keys.length > seasonLimit) {
     const rest = keys.slice(seasonLimit);
     const restCount = rest.reduce((n, k) => n + buckets.get(k).length, 0);
-    const names = rest.map((k) => seasonLabel(buckets.get(k)[0].season)).join(" ");
-    const row = el("div", withLabel ? "season-row" : "season-row solo");
-    if (withLabel) row.appendChild(el("span", "season-label", "…"));
-    const hint = el("div", "m-eps");
-    hint.appendChild(el("span", "ep more", `还有 ${names} · ${restCount} 集`));
-    row.appendChild(hint);
-    wrap.appendChild(row);
+    // 缺季号的条目标签是「—」，拼进摘要会变成「SP —」这种读不通的串，直接略过
+    const names = rest
+      .map((k) => seasonLabel(buckets.get(k)[0].season))
+      .filter((n) => n !== "—")
+      .join(" ");
+    more = `还有 ${names || "其他"} · ${restCount} 集`;
   }
 
-  return wrap;
+  // 单季没有季标签，铺开只会让方块悬在中间，保持紧凑
+  if (keys.length === 1) wrap.classList.add("single");
+
+  return { node: wrap, more };
 }
 
 function buildDrawerContent(list) {

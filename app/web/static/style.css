@@ -337,11 +337,15 @@ button.small { padding: 3px 10px; font-size: 12px; }
 /* 分季：每季一行，左侧只用纯文字季标识，避免和单集方块混淆 */
 .m-seasons {
   margin-top: 8px;
-  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* 季行在剩余高度内均匀铺开，避免多季卡中间塌出大片空白 */
+  flex: 1 1 auto;
+  justify-content: space-evenly;
 }
+/* 单季没有季标签，铺开只会让方块悬在中间，保持紧凑 */
+.m-seasons.single { justify-content: flex-start; }
 .season-row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -387,16 +391,43 @@ button.small { padding: 3px 10px; font-size: 12px; }
   background: transparent;
   color: var(--muted);
   font-size: 11.5px;
-  min-width: auto;
+  /* 预留「0/19」这类获取率的宽度，将来放进来不会让布局跳动 */
+  min-width: 38px;
   padding: 0 3px;
 }
 
-.m-episode-drawer-btn {
-  /* 统一贴在卡片右下角，作为操作区的锚点 */
-  align-self: flex-end;
+/* 卡片底部操作栏：左侧折叠摘要与获取率，右侧展开入口 */
+.m-footer {
   margin-top: auto;
-  height: 28px;
-  padding: 0 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f2f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+}
+.m-footer-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.m-footer-info > span { overflow: hidden; text-overflow: ellipsis; }
+.m-rate { font-variant-numeric: tabular-nums; color: #8b93a1; }
+.m-more { color: #8b93a1; }
+
+.m-episode-drawer-btn {
+  /* 固定在底部操作栏右侧，作为后续操作区的锚点 */
+  align-self: center;
+  flex: 0 0 auto;
+  margin-top: 0;
+  height: 26px;
+  padding: 0 9px;
   border: 1px solid #dbe3ef;
   border-radius: 6px;
   background: #f7f9fc;
