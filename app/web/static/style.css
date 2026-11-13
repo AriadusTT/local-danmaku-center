@@ -14,6 +14,15 @@
 
 * { box-sizing: border-box; }
 
+/* 隐藏「页面」的滚动条：内容确实超过一屏（滚轮、键盘、PageDown 照常滚），
+   但这条竖条在宽屏上是纯噪音；更麻烦的是打开弹窗时 body 会 overflow:hidden，
+   滚动条一消失整页就横向跳一下。只隐藏根滚动容器，内部面板（日志、弹窗内容区）的滚动条保留。 */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar { width: 0; height: 0; }
+
 body {
   margin: 0;
   background: var(--bg);
