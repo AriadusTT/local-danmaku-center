@@ -192,18 +192,18 @@
     </section>
   </main>
 
-  <!-- ============================ 全部集数抽屉 ============================ -->
-  <div class="drawer-overlay" id="episode-drawer" hidden>
-    <aside class="episode-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-      <header class="drawer-head">
-        <div class="drawer-heading">
+  <!-- ============================ 全部集数（大卡片弹窗） ============================ -->
+  <div class="modal-overlay" id="episode-drawer" hidden>
+    <div class="episode-modal" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header class="modal-head">
+        <div class="modal-heading">
           <h2 id="drawer-title"></h2>
-          <div class="drawer-sub" id="drawer-sub"></div>
+          <div class="modal-sub" id="drawer-sub"></div>
         </div>
         <button class="small" id="drawer-close" type="button">关闭</button>
       </header>
-      <div class="drawer-body" id="drawer-body"></div>
-    </aside>
+      <div class="modal-body" id="drawer-body"></div>
+    </div>
   </div>
 
   <!-- ============================ 危险操作确认 ============================ -->
