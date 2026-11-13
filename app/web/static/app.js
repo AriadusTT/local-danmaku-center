@@ -552,16 +552,21 @@ function buildGroupCard(g) {
   } else {
     const block = buildSeasonBlock(list, { preview: needsDrawer });
     body.appendChild(block.node);
-    // 季太多时的折叠摘要贴着季行
-    if (block.more) body.appendChild(el("div", "m-more", block.more));
 
-    // 「查看全部」留在卡片右下角，作为进入单集抽屉的入口
-    if (needsDrawer) {
+    // 右下角：折叠摘要在上，「查看全部」在下，不再单独占一行
+    if (block.more || needsDrawer) {
       const foot = el("div", "m-card-foot");
-      const btn = el("button", "m-episode-drawer-btn", `查看全部 ${g.total} 集`);
-      btn.type = "button";
-      btn.addEventListener("click", () => openEpisodeDrawer(g));
-      foot.appendChild(btn);
+      if (block.more) {
+        const more = el("div", "m-more", block.more);
+        more.title = block.more;
+        foot.appendChild(more);
+      }
+      if (needsDrawer) {
+        const btn = el("button", "m-episode-drawer-btn", `查看全部 ${g.total} 集`);
+        btn.type = "button";
+        btn.addEventListener("click", () => openEpisodeDrawer(g));
+        foot.appendChild(btn);
+      }
       body.appendChild(foot);
     }
   }
@@ -638,6 +643,8 @@ function cardRowBudget(card) {
 function fitEpRows(card) {
   const budget = cardRowBudget(card);
   let idx = 0;
+  // 有「还有 S3 S4…」摘要的卡，说明季没画全，按钮必须留着
+  let truncated = !!card.querySelector(".m-more");
   for (const eps of card.querySelectorAll(".m-eps")) {
     const rows = budget[idx++] || budget[0];
     const items = eps._items;
@@ -649,7 +656,19 @@ function fitEpRows(card) {
     const perRow = Math.max(1, Math.floor((width + 3) / (chipW + 3)));
     const capacity = perRow * rows;
     const show = items.length <= capacity ? items.length : capacity - 1;
+    if (show < items.length) truncated = true;
     if (eps.dataset.show !== String(show)) renderEpRow(eps, show);
+  }
+
+  // 所有集数都已经摆得下时，「查看全部」就是多余的：收起按钮和底栏，并按新高度重算一次
+  const btn = card.querySelector(".m-episode-drawer-btn");
+  if (btn && btn.hidden === truncated) {
+    btn.hidden = !truncated;
+    const foot = card.querySelector(".m-card-foot");
+    if (foot) {
+      foot.hidden = !foot.querySelector(".m-episode-drawer-btn:not([hidden]), .m-more");
+    }
+    requestAnimationFrame(() => fitEpRows(card));
   }
 }
 
