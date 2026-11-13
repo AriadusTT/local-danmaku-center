@@ -435,6 +435,13 @@ async function loadMedia(page = 1) {
     );
   }
   for (const g of data.groups) box.appendChild(buildGroupCard(g));
+  // 卡片宽度只有进 DOM 才知道；连测两帧，等栅格宽度定稿再决定每季画几个方块
+  requestAnimationFrame(() => {
+    for (const card of box.querySelectorAll(".m-card")) fitEpRows(card);
+    requestAnimationFrame(() => {
+      for (const card of box.querySelectorAll(".m-card")) fitEpRows(card);
+    });
+  });
 
   $("#media-summary").textContent = `${data.total} 部`;
   $("#pager-info").textContent = `共 ${data.total} 部 · 第 ${data.page}/${data.pages || 1} 页`;
@@ -449,8 +456,11 @@ const EPS_PER_SEASON = 30;
 //: 超过这个集数后，卡片只放摘要，完整列表进抽屉
 const EPISODE_DRAWER_THRESHOLD = 24;
 const CARD_PREVIEW_SEASONS = 2;
-//: 预览态每季画 5 个方块。6 个会把一行占满（164px / 可用 166px），+N 只能折行
-const CARD_PREVIEW_EPS = 5;
+//: 季行行数由卡片剩余高度算出来，这里只兜底与封顶
+const CARD_EPS_ROWS = 2;
+const CARD_EPS_ROWS_MAX = 6;
+//: 先画这么多个，等卡片进 DOM 后按实际宽度补满
+const CARD_EPS_INITIAL = 8;
 
 function epTitle(it) {
   if (it.season != null && it.episode != null) {
@@ -501,14 +511,35 @@ function buildGroupCard(g) {
     : g.title;
   body.appendChild(title);
 
+  // 元信息栏：一行放下「年份 · 集数 · 库 ｜ 弹幕 x/y ｜ 查看全部」，竖线分隔。
+  // 底部不再单独占一行，卡片高度只由标题和季行决定。
   const bits = [];
   if (g.year) bits.push(String(g.year));
   bits.push(g.kind === "movie" ? "1 部" : `${g.total} 集`);
-  if (g.updated_at) bits.push(`更新 ${fmtDateShort(g.updated_at)}`);
-  if (g.library_name) bits.push(g.library_name);
-  body.appendChild(el("div", "m-sub", bits.join(" · ")));
+
+  const bar = el("div", "m-bar");
+  const meta = el("div", "m-sub", bits.join(" · "));
+  // 媒体库和「更新 xx」从信息条撤掉、挪进悬停提示，信息条只留年份与总集数
+  const tip = bits.slice();
+  if (g.library_name) tip.push(g.library_name);
+  if (g.updated_at) tip.push(`最近更新 ${fmtTime(g.updated_at)}`);
+  meta.title = tip.join(" · ");
+  bar.appendChild(meta);
 
   const list = g.items || [];
+  const needsDrawer = g.kind !== "movie" && list.length > EPISODE_DRAWER_THRESHOLD;
+
+  if (g.kind !== "movie") {
+    const have = list.filter((it) => (it.danmaku_status || "none") !== "none").length;
+    const actions = el("div", "m-bar-actions");
+    actions.appendChild(el("span", "m-bar-sep"));
+    const rate = el("span", "m-rate", `弹幕 ${have}/${g.total}`);
+    rate.title = `已获取 ${have} 集，共 ${g.total} 集`;
+    actions.appendChild(rate);
+    bar.appendChild(actions);
+  }
+  body.appendChild(bar);
+
   if (g.kind === "movie") {
     const row = el("div", "season-row solo");
     const eps = el("div", "m-eps");
@@ -519,27 +550,20 @@ function buildGroupCard(g) {
     row.appendChild(eps);
     body.appendChild(row);
   } else {
-    const needsDrawer = list.length > EPISODE_DRAWER_THRESHOLD;
     const block = buildSeasonBlock(list, { preview: needsDrawer });
     body.appendChild(block.node);
+    // 季太多时的折叠摘要贴着季行
+    if (block.more) body.appendChild(el("div", "m-more", block.more));
 
-    // 底部操作栏：左侧折叠摘要 + 弹幕获取率，右侧展开入口
-    const footer = el("div", "m-footer");
-    const info = el("div", "m-footer-info");
-    if (block.more) info.appendChild(el("span", "m-more", block.more));
-    const have = list.filter((it) => (it.danmaku_status || "none") !== "none").length;
-    const rate = el("span", "m-rate", `弹幕 ${have}/${g.total}`);
-    rate.title = `已获取 ${have} 集，共 ${g.total} 集`;
-    info.appendChild(rate);
-    footer.appendChild(info);
-
+    // 「查看全部」留在卡片右下角，作为进入单集抽屉的入口
     if (needsDrawer) {
+      const foot = el("div", "m-card-foot");
       const btn = el("button", "m-episode-drawer-btn", `查看全部 ${g.total} 集`);
       btn.type = "button";
       btn.addEventListener("click", () => openEpisodeDrawer(g));
-      footer.appendChild(btn);
+      foot.appendChild(btn);
+      body.appendChild(foot);
     }
-    body.appendChild(footer);
   }
   card.appendChild(body);
   return card;
@@ -550,6 +574,82 @@ function seasonLabel(season) {
   if (season === null || season === undefined) return "—";
   if (Number(season) === 0) return "SP";
   return `S${season}`;
+}
+
+/** 单集方块 */
+function makeEpChip(it) {
+  const chip = el("span", `ep ${epState(it)}`);
+  chip.textContent = it.episode != null ? String(it.episode) : "·";
+  chip.title = `${epTitle(it)} · ${matchLabel(it.match_status)}`;
+  return chip;
+}
+
+/** 重画一季的方块行：show 之前正常显示，其余收成 +N */
+function renderEpRow(eps, show) {
+  const items = eps._items || [];
+  eps.textContent = "";
+  for (const it of items.slice(0, show)) eps.appendChild(makeEpChip(it));
+  if (show < items.length) {
+    eps.appendChild(el("span", "ep more", `+${items.length - show}`));
+  }
+  eps.dataset.show = String(show);
+}
+
+/** 这张卡片的季行还能占几行：以海报高度为上限，减去标题/信息条/按钮占掉的 */
+function cardRowBudget(card) {
+  const body = card.querySelector(".m-body");
+  const wrap = card.querySelector(".m-seasons");
+  const poster = card.querySelector(".m-poster");
+  // 用海报高度当预算，而不是 body 高度：body 会被内容撑高，拿它算会自我放大
+  const capH = poster ? poster.offsetHeight : 222;
+  if (!body || !wrap) return [CARD_EPS_ROWS];
+  let used = 0;
+  for (const child of body.children) {
+    if (child === wrap) continue;
+    const h = child.getBoundingClientRect().height;
+    // 底部按钮是 margin-top:auto，computed 出来的是「剩余空间」而不是外边距，
+    // 把它算进去会让预算变成负数，这里只取高度
+    if (child.classList.contains("m-card-foot")) {
+      used += h;
+      continue;
+    }
+    const cs = getComputedStyle(child);
+    used += h + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+  }
+  const ws = getComputedStyle(wrap);
+  used += (parseFloat(ws.marginTop) || 0) + (parseFloat(ws.marginBottom) || 0);
+  const seasons = Number(wrap.dataset.seasons) || 1;
+  // 24px 方块 + 3px 间距；季与季之间还有 5px gap 和虚线，粗算 9px
+  const free = capH - used - (seasons - 1) * 9 - 4;
+  // 先算总行数，再按季分配；除不尽的余数补给前面的季，
+  // 否则「3 行 / 2 季」会各留半行空着
+  const total = Math.max(1, Math.floor(free / 27));
+  const base = Math.max(1, Math.floor(total / seasons));
+  const rem = Math.max(0, total - base * seasons);
+  const rows = [];
+  for (let i = 0; i < seasons; i++) {
+    rows.push(Math.min(base + (i < rem ? 1 : 0), CARD_EPS_ROWS_MAX));
+  }
+  return rows;
+}
+
+/** 卡片进 DOM 后按真实宽高决定画几个方块：能放下就铺满 */
+function fitEpRows(card) {
+  const budget = cardRowBudget(card);
+  let idx = 0;
+  for (const eps of card.querySelectorAll(".m-eps")) {
+    const rows = budget[idx++] || budget[0];
+    const items = eps._items;
+    if (!eps._preview || !items || !items.length) continue;
+    const width = eps.clientWidth;
+    if (!width) continue;
+    const sample = eps.querySelector(".ep:not(.more)");
+    const chipW = sample ? sample.offsetWidth : 24;
+    const perRow = Math.max(1, Math.floor((width + 3) / (chipW + 3)));
+    const capacity = perRow * rows;
+    const show = items.length <= capacity ? items.length : capacity - 1;
+    if (eps.dataset.show !== String(show)) renderEpRow(eps, show);
+  }
 }
 
 function seasonRank(key) {
@@ -576,8 +676,8 @@ function buildSeasonBlock(list, { preview = false } = {}) {
   const withLabel = !(keys.length === 1 && Number(firstSeason) === 1);
 
   const seasonLimit = preview ? CARD_PREVIEW_SEASONS : SEASONS_SHOWN;
-  const episodeLimit = preview ? CARD_PREVIEW_EPS : EPS_PER_SEASON;
   const shownKeys = keys.slice(0, seasonLimit);
+  wrap.dataset.seasons = String(shownKeys.length);
   for (const key of shownKeys) {
     const items = buckets
       .get(key)
@@ -592,17 +692,10 @@ function buildSeasonBlock(list, { preview = false } = {}) {
     }
 
     const eps = el("div", "m-eps");
-    for (const it of items.slice(0, episodeLimit)) {
-      const chip = el("span", `ep ${epState(it)}`);
-      chip.textContent = it.episode != null ? String(it.episode) : "·";
-      chip.title = `${epTitle(it)} · ${matchLabel(it.match_status)}`;
-      eps.appendChild(chip);
-    }
-    if (items.length > episodeLimit) {
-      eps.appendChild(
-        el("span", "ep more", `+${items.length - episodeLimit}`)
-      );
-    }
+    eps._items = items;
+    eps._preview = preview;
+    const initial = preview ? Math.min(items.length, CARD_EPS_INITIAL) : items.length;
+    renderEpRow(eps, initial);
     row.appendChild(eps);
     wrap.appendChild(row);
   }
@@ -619,9 +712,6 @@ function buildSeasonBlock(list, { preview = false } = {}) {
       .join(" ");
     more = `还有 ${names || "其他"} · ${restCount} 集`;
   }
-
-  // 单季没有季标签，铺开只会让方块悬在中间，保持紧凑
-  if (keys.length === 1) wrap.classList.add("single");
 
   return { node: wrap, more };
 }
@@ -1108,6 +1198,18 @@ async function boot() {
   await loadHealth().catch(() => {});
   await loadLibraries().catch(() => {});
   await loadStats().catch(() => {});
+  // 栅格宽度一变（窗口缩放、右栏塌陷）就按新宽度重排方块；只认宽度变化，防止自触发循环
+  const gridEl = $("#media-groups");
+  if (gridEl && window.ResizeObserver) {
+    let lastWidth = 0;
+    new ResizeObserver((entries) => {
+      const w = Math.round(entries[0].contentRect.width);
+      if (!w || Math.abs(w - lastWidth) < 1) return;
+      lastWidth = w;
+      for (const card of gridEl.querySelectorAll(".m-card")) fitEpRows(card);
+    }).observe(gridEl);
+  }
+
   await loadMedia(1).catch(() => {});
   startLogPoll();
 

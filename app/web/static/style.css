@@ -310,8 +310,8 @@ button.small { padding: 3px 10px; font-size: 12px; }
   padding-top: 1px;
   display: flex;
   flex-direction: column;
-  /* 父级是 align-items:start（防海报拉伸），这里要反过来撑满，
-     否则「查看全部」按钮的 margin-top:auto 没有多余空间可推 */
+  /* 父级是 align-items:start（防海报拉伸），这里反过来撑满，
+     卡片被同排更高的卡拉高时，内容仍然贴顶 */
   align-self: stretch;
   min-width: 0;
 }
@@ -319,19 +319,42 @@ button.small { padding: 3px 10px; font-size: 12px; }
   font-size: 15px;
   font-weight: 600;
   line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.8em;
+  /* 自适应：一行就是一行，长标题自然折到第二行，不再锁死两行高 */
+  overflow-wrap: anywhere;
+}
+/* 标题下的一行：元信息 ｜ 弹幕获取率 ｜ 查看全部 */
+.m-bar {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  /* 卡片窄到放不下时整体折行，而不是把元信息压成省略号 */
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 .m-sub {
-  margin-top: 5px;
+  flex: 1 1 auto;
+  min-width: 96px;
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.m-bar-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.m-bar-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 12px;
+  /* 白底上 1px 太浅就等于没有，这里要够看得见 */
+  background: #d5dce6;
 }
 
 /* 分季：每季一行，左侧只用纯文字季标识，避免和单集方块混淆 */
@@ -339,13 +362,9 @@ button.small { padding: 3px 10px; font-size: 12px; }
   margin-top: 8px;
   display: flex;
   flex-direction: column;
+  /* 季与季之间就是一次换行的距离，不再在剩余高度里均分 */
   gap: 5px;
-  /* 季行在剩余高度内均匀铺开，避免多季卡中间塌出大片空白 */
-  flex: 1 1 auto;
-  justify-content: space-evenly;
 }
-/* 单季没有季标签，铺开只会让方块悬在中间，保持紧凑 */
-.m-seasons.single { justify-content: flex-start; }
 .season-row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -353,7 +372,7 @@ button.small { padding: 3px 10px; font-size: 12px; }
   align-items: start;
 }
 .season-row + .season-row {
-  padding-top: 5px;
+  padding-top: 4px;
   border-top: 1px dashed #edf0f4;
 }
 /* 电影没有季，占满整行 */
@@ -396,44 +415,43 @@ button.small { padding: 3px 10px; font-size: 12px; }
   padding: 0 2px;
 }
 
-/* 卡片底部操作栏：左侧折叠摘要与获取率，右侧展开入口 */
-.m-footer {
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid #f0f2f5;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 30px;
-}
-.m-footer-info {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  color: var(--muted);
+.m-rate {
+  flex: 0 0 auto;
   font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: #8b93a1;
+  white-space: nowrap;
+}
+/* 季数超出一屏时的折叠摘要，紧贴季行 */
+.m-more {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: #8b93a1;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
-.m-footer-info > span { overflow: hidden; text-overflow: ellipsis; }
-.m-rate { font-variant-numeric: tabular-nums; color: #8b93a1; }
-.m-more { color: #8b93a1; }
+
+/* 卡片右下角：进入单集抽屉的入口 */
+.m-card-foot {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
 
 .m-episode-drawer-btn {
-  /* 固定在底部操作栏右侧，作为后续操作区的锚点 */
-  align-self: center;
   flex: 0 0 auto;
-  margin-top: 0;
-  height: 26px;
-  padding: 0 9px;
+  align-self: center;
+  height: 22px;
+  padding: 0 8px;
   border: 1px solid #dbe3ef;
   border-radius: 6px;
   background: #f7f9fc;
   color: var(--accent);
-  font-size: 12px;
-  line-height: 26px;
+  font-size: 11.5px;
+  line-height: 20px;
+  white-space: nowrap;
 }
 .m-episode-drawer-btn:hover { background: var(--accent-soft); border-color: #c9d8f5; }
 
