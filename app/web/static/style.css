@@ -18,27 +18,33 @@
    但这条竖条在宽屏上是纯噪音；更麻烦的是打开弹窗时 body 会 overflow:hidden，
    滚动条一消失整页就横向跳一下。只隐藏根滚动容器，内部面板（日志、弹窗内容区）的滚动条保留。 */
 html {
+  height: 100%;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 html::-webkit-scrollbar { width: 0; height: 0; }
 
+/* 应用外壳：页面高度锁定为一屏，由内部区域各自滚动。
+   这样滚动条不会时有时无，右栏也不会只占一屏高、下面留一大块灰色空档。 */
 body {
   margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font: 14px/1.55 "Segoe UI", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 
 header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 16px 24px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
   z-index: 10;
 }
 
@@ -61,35 +67,54 @@ header .spacer { flex: 1; }
 
 /* 宽屏上不再靠 margin:auto 居中留白：左侧内容自适应，右侧 340px 固定栏 */
 .workspace {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  align-items: start;
+  align-items: stretch;
   gap: 18px;
-  /* 底部只留很小的收尾间距，避免内容结束后出现明显空带 */
-  padding: 20px 24px 14px;
+  padding: 20px 24px 0;
+  overflow: hidden;
 }
 
+/* 左侧内容自己滚：页面不动，右栏也就永远填满 */
 main {
   display: grid;
   gap: 18px;
+  align-content: start;
   min-width: 0;
+  min-height: 0;
+  padding-bottom: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 预留滚动条槽位，翻页时卡片宽度不会跳 */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #d3d9e3 transparent;
 }
+main::-webkit-scrollbar { width: 8px; }
+main::-webkit-scrollbar-track { background: transparent; }
+main::-webkit-scrollbar-thumb {
+  background: #d7dce5;
+  border-radius: 4px;
+}
+main::-webkit-scrollbar-thumb:hover { background: #c3cad6; }
 
 #view-settings {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 20px 24px 24px;
   max-width: 1120px;
 }
 
-/* 右栏：滚动页面时整栏跟随，日志自己内部滚动 */
+/* 右栏：高度跟着内容区走（grid 拉伸），日志面板内部滚动 */
 .rail {
-  position: sticky;
-  top: 78px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  /* 用 height 而不是 max-height：日志面板要真的撑到底，否则下面留一截空白 */
-  height: calc(100vh - 96px);
-  min-height: 420px;
+  min-height: 0;
+  min-width: 0;
 }
 
 section.panel {
@@ -469,6 +494,8 @@ button.small { padding: 3px 10px; font-size: 12px; }
 .m-episode-modal-btn[hidden] { display: none; }
 
 /* ---------------------------------------------------------------- 全部集数（大卡片弹窗） */
+/* 弹窗打开时只锁 body：main 不能设 overflow:hidden，
+   否则它的滚动条槽位（scrollbar-gutter）会被撤掉，卡片宽度又跳 8px */
 body.modal-open { overflow: hidden; }
 .modal-overlay {
   position: fixed;
@@ -726,10 +753,22 @@ select.mini {
 .log-empty { color: var(--muted); font-size: 12px; padding: 11px 2px; }
 
 @media (max-width: 1280px) {
-  .workspace { grid-template-columns: minmax(0, 1fr); }
-  .rail {
-    position: static;
+  /* 窄屏：右栏下沉到内容下方，交回整页滚动 */
+  html, body { height: auto; overflow: visible; }
+  body { display: block; }
+  .workspace {
     height: auto;
+    overflow: visible;
+    padding-bottom: 24px;
+  }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  main {
+    overflow: visible;
+    padding-bottom: 0;
+    scrollbar-gutter: auto;
+  }
+  #view-settings { height: auto; overflow: visible; }
+  .rail {
     min-height: 0;
     flex-direction: row;
     flex-wrap: wrap;
