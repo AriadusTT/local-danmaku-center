@@ -150,7 +150,7 @@ async def cmd_stats(_args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m app.cli", description="Emby 弹幕缓存服务 · 命令行"
+        prog="python -m app.cli", description="本地弹幕中心 · 命令行"
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

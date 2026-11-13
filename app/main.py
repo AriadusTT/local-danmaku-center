@@ -80,7 +80,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="Emby 弹幕缓存服务",
+    title="本地弹幕中心",
     description="阶段一：媒体库扫描",
     version=__version__,
     lifespan=lifespan,
