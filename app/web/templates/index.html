@@ -19,7 +19,7 @@
 
   <!-- ============================ 控制台 ============================ -->
   <div class="workspace" id="workspace">
-    <main id="view-main">
+    <main>
       <section class="panel">
         <h2>
           扫描
@@ -184,7 +184,7 @@
         <div class="danger-row">
           <div>
             <strong>清空扫描数据</strong>
-            <div class="sub" id="purge-hint">删除全部库记录与条目索引，配置保留。下次需要重新同步库并扫描。</div>
+            <div class="sub">删除全部库记录与条目索引，配置保留。下次需要重新同步库并扫描。</div>
           </div>
           <button class="danger" id="btn-purge">清空数据</button>
         </div>
@@ -193,17 +193,19 @@
   </main>
 
   <!-- ============================ 全部集数（大卡片弹窗） ============================ -->
-  <div class="modal-overlay" id="episode-drawer" hidden>
-    <div class="episode-modal" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-      <header class="modal-head">
-        <div class="modal-cover" id="drawer-cover"></div>
-        <div class="modal-heading">
-          <h2 id="drawer-title"></h2>
-          <div class="modal-sub" id="drawer-sub"></div>
+  <div class="modal-overlay" id="episode-modal" hidden>
+    <div class="episode-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" id="modal-close" type="button" aria-label="关闭" title="关闭">✕</button>
+      <div class="modal-poster" id="modal-poster"></div>
+      <div class="modal-main">
+        <h2 class="modal-title" id="modal-title"></h2>
+        <div class="modal-bar">
+          <span class="modal-sub" id="modal-sub"></span>
+          <span class="modal-sep"></span>
+          <span class="modal-rate" id="modal-rate"></span>
         </div>
-        <button class="small" id="drawer-close" type="button">关闭</button>
-      </header>
-      <div class="modal-body" id="drawer-body"></div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
     </div>
   </div>
 

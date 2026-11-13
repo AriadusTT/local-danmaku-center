@@ -51,13 +51,6 @@ function fmtTime(iso) {
   return d.toLocaleString("zh-CN", { hour12: false });
 }
 
-function fmtDateShort(iso) {
-  if (!iso) return "";
-  const d = new Date(iso.endsWith("Z") ? iso : iso + "Z");
-  if (Number.isNaN(d.getTime())) return "";
-  return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /* ---------------------------------------------------------------- 视图 */
 
 function switchView(view) {
@@ -451,8 +444,6 @@ async function loadMedia(page = 1) {
 
 //: 一屏最多完整展示几季；超出的季折成一行摘要
 const SEASONS_SHOWN = 6;
-//: 每季最多画几个方块，剩下的用 +N 表示
-const EPS_PER_SEASON = 30;
 //: 超过这个集数后，卡片只放摘要，完整列表进抽屉
 const EPISODE_DRAWER_THRESHOLD = 24;
 const CARD_PREVIEW_SEASONS = 2;
@@ -562,9 +553,9 @@ function buildGroupCard(g) {
         foot.appendChild(more);
       }
       if (needsDrawer) {
-        const btn = el("button", "m-episode-drawer-btn", `查看全部 ${g.total} 集`);
+        const btn = el("button", "m-episode-modal-btn", `查看全部 ${g.total} 集`);
         btn.type = "button";
-        btn.addEventListener("click", () => openEpisodeDrawer(g));
+        btn.addEventListener("click", () => openEpisodeModal(g));
         foot.appendChild(btn);
       }
       body.appendChild(foot);
@@ -661,12 +652,12 @@ function fitEpRows(card) {
   }
 
   // 所有集数都已经摆得下时，「查看全部」就是多余的：收起按钮和底栏，并按新高度重算一次
-  const btn = card.querySelector(".m-episode-drawer-btn");
+  const btn = card.querySelector(".m-episode-modal-btn");
   if (btn && btn.hidden === truncated) {
     btn.hidden = !truncated;
     const foot = card.querySelector(".m-card-foot");
     if (foot) {
-      foot.hidden = !foot.querySelector(".m-episode-drawer-btn:not([hidden]), .m-more");
+      foot.hidden = !foot.querySelector(".m-episode-modal-btn:not([hidden]), .m-more");
     }
     requestAnimationFrame(() => fitEpRows(card));
   }
@@ -736,8 +727,8 @@ function buildSeasonBlock(list, { preview = false } = {}) {
   return { node: wrap, more };
 }
 
-function buildDrawerContent(list) {
-  const wrap = el("div", "drawer-seasons");
+function buildModalContent(list) {
+  const wrap = el("div", "modal-seasons");
   const buckets = new Map();
   for (const it of list) {
     const key = it.season === null || it.season === undefined ? "x" : String(it.season);
@@ -752,37 +743,41 @@ function buildDrawerContent(list) {
       .get(key)
       .slice()
       .sort((a, b) => (a.episode ?? 0) - (b.episode ?? 0));
-    const section = el("section", "drawer-season");
-    const head = el("div", "drawer-season-head");
-    head.appendChild(el("span", "drawer-season-name", seasonLabel(items[0].season)));
-    head.appendChild(el("span", "drawer-season-count", `${items.length} 集`));
-    section.appendChild(head);
-    const eps = el("div", "drawer-eps");
+    // 和小卡片同构：左侧季标签，右侧方块自动换行
+    const row = el("div", "modal-season");
+    const label = el("span", "modal-season-label", seasonLabel(items[0].season));
+    label.title = `${seasonLabel(items[0].season)} · ${items.length} 集`;
+    row.appendChild(label);
+    const eps = el("div", "modal-eps");
     for (const it of items) {
-      const chip = el("span", `ep drawer-ep ${epState(it)}`);
+      const chip = el("span", `ep modal-ep ${epState(it)}`);
       chip.textContent = it.episode != null ? String(it.episode) : "·";
       chip.title = `${epTitle(it)} · ${matchLabel(it.match_status)}`;
       eps.appendChild(chip);
     }
-    section.appendChild(eps);
-    wrap.appendChild(section);
+    row.appendChild(eps);
+    wrap.appendChild(row);
   }
   return wrap;
 }
 
-function openEpisodeDrawer(g) {
-  const overlay = $("#episode-drawer");
+function openEpisodeModal(g) {
+  const overlay = $("#episode-modal");
   if (!overlay) return;
-  $("#drawer-title").textContent = g.title || "未命名剧集";
+  $("#modal-title").textContent = g.title || "未命名剧集";
   const bits = [];
   if (g.year) bits.push(String(g.year));
   bits.push(`${g.total} 集`);
   if (g.library_name) bits.push(g.library_name);
   if (g.updated_at) bits.push(`最近更新 ${fmtTime(g.updated_at)}`);
-  $("#drawer-sub").textContent = bits.join(" · ");
+  $("#modal-sub").textContent = bits.join(" · ");
+  const have = (g.items || []).filter(
+    (it) => (it.danmaku_status || "none") !== "none"
+  ).length;
+  $("#modal-rate").textContent = `弹幕 ${have}/${g.total}`;
 
   // 封面：和卡片用同一个代理接口，取不到时退回首字占位
-  const cover = $("#drawer-cover");
+  const cover = $("#modal-poster");
   const initial = (g.title || "?").trim().charAt(0);
   cover.textContent = "";
   if (g.cover_id) {
@@ -802,20 +797,20 @@ function openEpisodeDrawer(g) {
   } else {
     cover.textContent = initial;
   }
-  const body = $("#drawer-body");
+  const body = $("#modal-body");
   body.innerHTML = "";
-  body.appendChild(buildDrawerContent(g.items || []));
+  body.appendChild(buildModalContent(g.items || []));
   overlay.hidden = false;
-  document.body.classList.add("drawer-open");
+  document.body.classList.add("modal-open");
   body.scrollTop = 0;
-  $("#drawer-close").focus();
+  $("#modal-close").focus();
 }
 
-function closeEpisodeDrawer() {
-  const overlay = $("#episode-drawer");
+function closeEpisodeModal() {
+  const overlay = $("#episode-modal");
   if (!overlay) return;
   overlay.hidden = true;
-  document.body.classList.remove("drawer-open");
+  document.body.classList.remove("modal-open");
 }
 
 function matchLabel(status) {
@@ -1183,11 +1178,11 @@ function bind() {
   const btnLogDownload = $("#btn-log-download");
   if (btnLogDownload) btnLogDownload.addEventListener("click", downloadLogs);
 
-  const drawer = $("#episode-drawer");
-  if (drawer) {
-    $("#drawer-close").addEventListener("click", closeEpisodeDrawer);
-    drawer.addEventListener("click", (e) => {
-      if (e.target === drawer) closeEpisodeDrawer();
+  const modal = $("#episode-modal");
+  if (modal) {
+    $("#modal-close").addEventListener("click", closeEpisodeModal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeEpisodeModal();
     });
   }
 
@@ -1199,8 +1194,8 @@ function bind() {
   });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (!$("#episode-drawer").hidden) {
-      closeEpisodeDrawer();
+    if (!$("#episode-modal").hidden) {
+      closeEpisodeModal();
       return;
     }
     if (!$("#danger").hidden) closeDanger();
