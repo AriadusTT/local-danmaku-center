@@ -556,8 +556,10 @@ function buildSeasonBlock(list, { preview = false } = {}) {
   const keys = [...buckets.keys()].sort(
     (a, b) => seasonRank(a) - seasonRank(b) || (Number(a) || 0) - (Number(b) || 0)
   );
-  // 每季单独一行并始终带 S1/S2/SP 标识，单季也显示，避免用户不知道季号
-  const withLabel = true;
+  // 单季且季号为 1 时不画标签：这个标签不提供信息，还会占掉 30px。
+  // 季号不是 1 时（S2 / SP / 缺号）必须画，否则会被误认为第一季。
+  const firstSeason = keys.length === 1 ? buckets.get(keys[0])[0].season : undefined;
+  const withLabel = !(keys.length === 1 && Number(firstSeason) === 1);
 
   const seasonLimit = preview ? CARD_PREVIEW_SEASONS : SEASONS_SHOWN;
   const episodeLimit = preview ? CARD_PREVIEW_EPS : EPS_PER_SEASON;
