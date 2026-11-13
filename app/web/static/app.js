@@ -621,9 +621,10 @@ function cardRowBudget(card) {
   const seasons = Number(wrap.dataset.seasons) || 1;
   // 24px 方块 + 3px 间距；季与季之间还有 5px gap 和虚线，粗算 9px
   const free = capH - used - (seasons - 1) * 9 - 4;
-  // 先算总行数，再按季分配；除不尽的余数补给前面的季，
-  // 否则「3 行 / 2 季」会各留半行空着
-  const total = Math.max(1, Math.floor(free / 27));
+  // 先算总行数：四舍五入而不是向下取整，否则 102px 只给 3 行（81px），
+  // 剩下 21px 既放不下一行又白空着。多出来的几像素让卡片长高一点即可。
+  const total = Math.max(seasons, Math.round(free / 27));
+  // 再按季平均分配，除不尽的余数补给前面的季（S1 多一行）
   const base = Math.max(1, Math.floor(total / seasons));
   const rem = Math.max(0, total - base * seasons);
   const rows = [];
