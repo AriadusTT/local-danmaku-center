@@ -449,7 +449,8 @@ const EPS_PER_SEASON = 30;
 //: 超过这个集数后，卡片只放摘要，完整列表进抽屉
 const EPISODE_DRAWER_THRESHOLD = 24;
 const CARD_PREVIEW_SEASONS = 2;
-const CARD_PREVIEW_EPS = 6;
+//: 预览态每季画 5 个方块。6 个会把一行占满（164px / 可用 166px），+N 只能折行
+const CARD_PREVIEW_EPS = 5;
 
 function epTitle(it) {
   if (it.season != null && it.episode != null) {

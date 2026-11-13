@@ -391,9 +391,9 @@ button.small { padding: 3px 10px; font-size: 12px; }
   background: transparent;
   color: var(--muted);
   font-size: 11.5px;
-  /* 预留「0/19」这类获取率的宽度，将来放进来不会让布局跳动 */
-  min-width: 38px;
-  padding: 0 3px;
+  /* 跟着内容走：给固定宽度会把它挤出方块行，折成孤零零的一行 */
+  min-width: auto;
+  padding: 0 2px;
 }
 
 /* 卡片底部操作栏：左侧折叠摘要与获取率，右侧展开入口 */
